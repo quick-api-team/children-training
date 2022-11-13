@@ -261,8 +261,11 @@
 						music.src = "/static/success.mp3";
 					}
 					
-								 
 					music.play(); //执行执行播放
+					music.onEnded(() => {  
+					
+						music.destroy()  
+					})
 				}catch(e){
 					//TODO handle the exception
 					console.error(e)
@@ -275,6 +278,10 @@
 					music.src = "/static/error.mp3";
 								 
 					music.play(); //执行执行播放
+					music.onEnded(() => {
+					
+						music.destroy()  
+					})
 				}catch(e){
 					//TODO handle the exception
 					console.error(e)
