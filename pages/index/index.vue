@@ -1,7 +1,7 @@
 <template>
 	<view class="container">
 		<navigator url="/pages/math-number/math-number">
-			<button type="primary">凑数测试</button>
+			<button type="primary">凑数练习</button>
 		</navigator>
 		
 	</view>
