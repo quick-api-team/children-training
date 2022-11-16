@@ -41,8 +41,9 @@
 				
 		</view>
 		<view class="answer item">
-			<uni-section title="选择答案" type="line" padding>
+			<uni-section :title="`选择答案 ( ${currentQuestionTimeString} )`" type="line" padding>
 				<template v-slot:right>
+					{{timeString}}
 				</template>
 				<uni-grid :column="2" :square="false" :highlight="true">
 					<uni-grid-item v-for="(item, index) in answer" :index="index" :key="index">
@@ -67,6 +68,8 @@
 </template>
 
 <script>
+	import * as dayjs from 'dayjs'
+
 	export default {
 		data() {
 			return {
@@ -95,7 +98,11 @@
 				alertPeriod: 600, //提醒周期,毫秒
 				timer: null,
 				skipTimes: 0,
-				maxSkipTimes: 2
+				maxSkipTimes: 2,
+				timeString: '',
+				currentQuestionTimeString: '',
+				currentQuestionStartTime: 0,
+				
 			}
 		},
 		mounted() {
@@ -116,7 +123,7 @@
 				this.score = parseInt(this.getDataFromCache(this.cacheKey.score, 0))
 				this.createNewQuestion()
 				
-				this.timer = setInterval(() => this.timeAlert(), 1000)
+				this.timer = setInterval(() => this.timeAlert(), 300)
 			},
 			getRandomNumber (max) {
 				let result = Math.floor(Math.random() * max)
@@ -135,16 +142,46 @@
 				
 				this.createAnswer(newQuestion)
 				this.currentQuestion = newQuestion
+				this.currentQuestionStartTime = new Date().getTime()
+				
 				console.info('new qustion, ' + newQuestion)
 			},
 			createAnswer (newQuestion) {
 				
 				let answerSet = new Set()
-				answerSet.add((this.max - newQuestion))
+				let answer = this.max - newQuestion
+				answerSet.add(answer)
 				let times = 0
-				let maxTimes = 100
+				let maxTimes = 20
+				
+				// 生成干扰项答案
+				let createTimes = 0
+				let maxCreateTimes = 1
+				let createFlag = true
+				
+				
+				if (answer > 100 && createFlag && maxCreateTimes > 0) {
+					let newRandomAnswer = parseInt(answer / 100) * 100 + (this.getRandomNumber(10) * 10) + (answer % 10)
+					createTimes++
+					if (!answerSet.has(newRandomAnswer)) {
+						answerSet.add(newRandomAnswer)
+					}
+					console.info('生成十位随机干扰答案 ' + newRandomAnswer + ', 原答案 ' + answer)
+				}
+				
 				while(times < maxTimes && answerSet.size < this.answerTotal) {
 					let newRandomAnswer = this.getRandomNumber(this.max)
+					if (createFlag && createTimes < maxCreateTimes) {
+						let originRandomAnswer = newRandomAnswer
+						
+						// 生成一个位数相同的干扰答案
+						if (originRandomAnswer > 10) {
+							
+							newRandomAnswer = parseInt(originRandomAnswer / 10) * 10 + (answer % 10)
+							createTimes++
+							console.info('生成干扰答案 ' + newRandomAnswer + ', 原答案 ' + answer)
+						}
+					}
 					if (!answerSet.has(newRandomAnswer)) {
 						answerSet.add(newRandomAnswer)
 					}
@@ -252,30 +289,20 @@
 			},
 			playSuccessMusic () {
 				
-				try{
-					let music = uni.createInnerAudioContext(); //创建播放器对象
-					 
-					if (this.successTimes > 0 && this.successTimes % 10 === 0) {
-						music.src = "/static/success10.mp3";
-					} else {
-						music.src = "/static/success.mp3";
-					}
-					
-					music.play(); //执行执行播放
-					music.onEnded(() => {  
-					
-						music.destroy()  
-					})
-				}catch(e){
-					//TODO handle the exception
-					console.error(e)
+				if (this.successTimes > 0 && this.successTimes % 10 === 0) {
+					this.playMusic("/static/success10.mp3")
+				} else {
+					this.playMusic("/static/success.mp3")
 				}
 			},
 			playFailMusic () {
+				this.playMusic("/static/error.mp3")
+			},
+			playMusic (file) {
 				try{
 					let music = uni.createInnerAudioContext(); //创建播放器对象
 					 
-					music.src = "/static/error.mp3";
+					music.src = file;
 								 
 					music.play(); //执行执行播放
 					music.onEnded(() => {
@@ -286,7 +313,6 @@
 					//TODO handle the exception
 					console.error(e)
 				}
-				
 			},
 			reduceScore () {
 				// if (this.max < 20) {
@@ -325,29 +351,53 @@
 				console.info('time alert')
 				let now = new Date().getTime()
 				let secoend = parseInt((now - this.startTime)/1000)
-				
+				this.showTime()
+				this.showCurrentQuestionTime()
 				if (secoend > 0 && secoend % this.alertPeriod === 0) {
 					
 					uni.showToast({
-						title: '已经练习'+ parseInt(secoend / 60) + '分钟了，休息一下吧!',
+						title: '练习'+ parseInt(secoend / 60) + '分钟了，休息一下吧!',
 						duration: 5000,
 						mask: true,
 						image: '/static/error.png'
-						
 					})
 				}	
 			},
 			skipCurrentQuestion () {
 				if (this.skipTimes >= this.maxSkipTimes) {
+					this.playMusic("/static/skipFail.mp3")
 					uni.showToast({
 						title: '最多可跳过' + this.maxSkipTimes + '题',
 						duration: 2000,
 						image: '/static/error.png'
 					})
 				} else {
+					this.playMusic("/static/skip.mp3")
 					this.skipTimes++
 					this.createNewQuestion()
 				}
+			},
+			showTime () {
+				let now = new Date().getTime()
+				this.timeString = this.getRelativeTime(this.startTime, now)
+			},
+			showCurrentQuestionTime () {
+				let now = new Date().getTime()
+				this.currentQuestionTimeString = this.getRelativeTime(this.currentQuestionStartTime, now)
+			},
+			getRelativeTime (start, end) {
+				
+				let secoend = parseInt((end - start)/1000)
+				
+				let hour = parseInt(secoend / 3600)
+				let minute = parseInt((secoend % 3600) / 60)
+				let s = parseInt(secoend % 60)
+				
+				let timeString = 
+					(hour > 0 ? hour + ':' : '') +
+					(minute >= 10 ? minute : '0' + minute) + ':' +
+					(s >= 10 ? s : '0' + s)
+				return timeString
 			}
 		}
 	}

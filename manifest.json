@@ -79,6 +79,9 @@
                     }
                 }
             }
+        },
+        "uniStatistics" : {
+            "enable" : false
         }
     },
     /* SDK配置 */
@@ -90,10 +93,65 @@
         "setting" : {
             "urlCheck" : false
         },
-        "usingComponents" : true
+        "usingComponents" : true,
+        "uniStatistics" : {
+            "enable" : false
+        }
     },
     "vueVersion" : "2",
     "h5" : {
-        "title" : "儿童学习训练助手"
+        "title" : "儿童学习训练助手",
+        "uniStatistics" : {
+            "enable" : false
+        }
+    },
+    "uniStatistics" : {
+        "enable" : false,
+        "version" : "2"
+    },
+    "mp-alipay" : {
+        "uniStatistics" : {
+            "enable" : false
+        }
+    },
+    "mp-baidu" : {
+        "uniStatistics" : {
+            "enable" : false
+        }
+    },
+    "mp-jd" : {
+        "uniStatistics" : {
+            "enable" : false
+        }
+    },
+    "mp-kuaishou" : {
+        "uniStatistics" : {
+            "enable" : false
+        }
+    },
+    "mp-lark" : {
+        "uniStatistics" : {
+            "enable" : false
+        }
+    },
+    "mp-qq" : {
+        "uniStatistics" : {
+            "enable" : false
+        }
+    },
+    "mp-toutiao" : {
+        "uniStatistics" : {
+            "enable" : false
+        }
+    },
+    "quickapp-webview-huawei" : {
+        "uniStatistics" : {
+            "enable" : false
+        }
+    },
+    "quickapp-webview-union" : {
+        "uniStatistics" : {
+            "enable" : false
+        }
     }
 }
