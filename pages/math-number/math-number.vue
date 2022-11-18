@@ -62,6 +62,7 @@
 		<uni-popup ref="message" type="message">
 			<uni-popup-message :type="msgType" :message="messageText" :duration="2000"></uni-popup-message>
 		</uni-popup>
+		
 
 	</view>
 	</view>
@@ -69,10 +70,13 @@
 
 <script>
 	import * as dayjs from 'dayjs'
+	const MODE_CUSTOM = 'custom' //自定义模式
+	const MODE_AUTO_UPGRADE = 'auto_grade' //自动升级模式
 
 	export default {
 		data() {
 			return {
+				mode: MODE_CUSTOM, //custom 自定义 upgrade 升级
 				id: 1,
 				answer: [
 					1,2,3,4
@@ -91,7 +95,9 @@
 				messageText: '这是一条成功提示',
 				cacheKey: {
 					max: 'max_number',
-					score: 'user_score'
+					score: 'user_score',
+					fail: 'fail_number',
+					success: 'success_number',
 				},
 				currentAnswerId: -1,
 				score: 0,
@@ -102,10 +108,16 @@
 				timeString: '',
 				currentQuestionTimeString: '',
 				currentQuestionStartTime: 0,
+				showFailMsg: false,
+				config: {
+					defaultMax: 20,
+					gameMax: 1000
+				},
+				recoverSuccessAndFailTimes: false
 				
 			}
 		},
-		mounted() {
+		mounted() {			
 			this.init()
 		},
 		beforeDestroy() {
@@ -116,14 +128,38 @@
 			}
 		    
 		},
+		onLoad: function (option) { 
+			if (typeof option.mode !== 'undefined' && option.mode !== null) {
+				this.mode = option.mode
+				console.log('mode = ' + this.mode)
+			}
+		},
 		methods: {
 			init () {
 				this.startTime = new Date().getTime()
-				this.max = parseInt(this.getDataFromCache(this.cacheKey.max, 20))
+				this.updateCacheKey()
+				if (this.mode === MODE_AUTO_UPGRADE) {
+					this.config.gameMax = 10000
+					this.recoverSuccessAndFailTimes = true
+				}
+				this.max = parseInt(this.getDataFromCache(this.cacheKey.max, this.config.defaultMax))
 				this.score = parseInt(this.getDataFromCache(this.cacheKey.score, 0))
+				
+				if (this.recoverSuccessAndFailTimes) {
+					
+					this.successTimes = parseInt(this.getDataFromCache(this.cacheKey.success, 0))
+					this.failTimes = parseInt(this.getDataFromCache(this.cacheKey.fail, 0))
+				}
 				this.createNewQuestion()
 				
 				this.timer = setInterval(() => this.timeAlert(), 300)
+			},
+			updateCacheKey () {
+				
+				if (this.mode !== MODE_CUSTOM) {
+					this.cacheKey.max = this.mode + '_' + this.cacheKey.max
+					this.cacheKey.score = this.mode + '_' + this.cacheKey.score
+				}
 			},
 			getRandomNumber (max) {
 				let result = Math.floor(Math.random() * max)
@@ -227,7 +263,24 @@
 				this.handleShowResult(true)
 				this.addScore()
 				this.playSuccessMusic()
+				this.setDataToCache(this.cacheKey.success, this.successTimes)
 				// this.answerClass = 'right'
+				
+				if (this.mode === MODE_AUTO_UPGRADE) {
+					if (this.successTimes > 0 && this.successTimes % 10 === 0) {
+					// if (true) {
+						//升级难度
+						let max = this.max
+						if (max <= 100) {
+							// 加5或者10
+							max +=  (this.getRandomNumber(3) === 1 ? 5 : 10)
+						} else {
+							max +=  this.getRandomNumber(50)
+						}
+						this.handleSetMax(max)
+					} 
+				}
+				
 			},
 			/**
 			 * 处理答案错误
@@ -238,6 +291,21 @@
 				this.handleShowResult(false)
 				this.reduceScore()
 				this.playFailMusic()
+				this.setDataToCache(this.cacheKey.fail, this.failTimes)
+				
+				if (this.mode === MODE_AUTO_UPGRADE && this.failTimes >= 20) {
+					// 游戏结束
+					this.showFailMsg = true
+					
+					uni.showToast({
+						title: '挑战失败',
+						duration: 5000,
+						mask: true,
+						image: '/static/error.png'
+					})
+					setTimeout(() => {this.handleFailConfirm()}, 2000)
+					
+				}
 				
 			},
 			handleShowResult (result) {
@@ -249,7 +317,18 @@
 				}, 800)
 			},
 			openSetting () {
-				this.$refs.inputDialog.open('center')
+				if (this.mode === MODE_CUSTOM) {
+					this.$refs.inputDialog.open('center')
+				} else {
+					uni.showToast({
+						title: '该模式不支持自定义',
+						duration: 2000,
+						mask: true,
+						image: '/static/error.png'
+					})
+					
+				}
+				
 			},
 			handleSetMax (val) {
 				let max = parseInt(val)
@@ -261,8 +340,8 @@
 					if (max < 5) {
 						max = 5
 					}
-					if (max > 1000) {
-						max = 1000
+					if (max > this.config.gameMax) {
+						max = this.config.gameMax
 					}
 					this.max = max
 					this.createNewQuestion()
@@ -326,7 +405,7 @@
 			},
 			addScore () {
 				let score = this.getQuestionScore()
-				console.info('add score ' + score)
+				console.info('add score mode = ' + this.mode + ', key = ' + this.cacheKey.score + ', score = ' + score)
 				this.score += score
 				this.setDataToCache(this.cacheKey.score, this.score)
 			},
@@ -398,6 +477,14 @@
 					(minute >= 10 ? minute : '0' + minute) + ':' +
 					(s >= 10 ? s : '0' + s)
 				return timeString
+			},
+			handleFailConfirm () {
+				this.handleSetMax(this.config.defaultMax)
+				this.setDataToCache(this.cacheKey.success, 0)
+				this.setDataToCache(this.cacheKey.fail, 0)
+				uni.redirectTo({
+					url: '/pages/index/index'
+				})
 			}
 		}
 	}
