@@ -27,6 +27,7 @@
 				</template>
 				<view class="number-view">
 					<view :class="['number', answerClass]" @click="skipCurrentQuestion">
+						<view :class="[acquireAwardScore ? 'acquire-award-score' : 'acquire-score']" v-if="showResult && acquireScore !== 0" :style="{color: acquireScore > 0 ? '#388e3c' : '#e4941e'}">{{acquireScore}}</view>
 						<view v-if="showResult">
 							<uni-icons v-if="lastResult" type="hand-up" size="200" color="#388e3c"></uni-icons>
 							<uni-icons v-else type="close"  size="200" color="#e4941e"></uni-icons>
@@ -36,6 +37,7 @@
 						</text>
 					</view>
 					<view class="number-max" @click="openSetting">{{max}}</view>
+					
 				</view>
 			</uni-section>
 				
@@ -113,7 +115,9 @@
 					defaultMax: 20,
 					gameMax: 1000
 				},
-				recoverSuccessAndFailTimes: false
+				recoverSuccessAndFailTimes: false,
+				acquireScore: 0,
+				acquireAwardScore: false //是否获得了奖励分
 				
 			}
 		},
@@ -245,6 +249,7 @@
 				}
 				this.skipTimes = 0
 				this.currentAnswerId = index
+				this.acquireAwardScore = false
 				let isSuccess = (this.max - this.currentQuestion - answer) === 0 ? true : false
 				
 				console.info('answer ' + answer + ', success? ' + isSuccess)
@@ -265,6 +270,7 @@
 				this.playSuccessMusic()
 				this.setDataToCache(this.cacheKey.success, this.successTimes)
 				// this.answerClass = 'right'
+				
 				
 				if (this.mode === MODE_AUTO_UPGRADE) {
 					if (this.successTimes > 0 && this.successTimes % 10 === 0) {
@@ -293,7 +299,7 @@
 				this.playFailMusic()
 				this.setDataToCache(this.cacheKey.fail, this.failTimes)
 				
-				if (this.mode === MODE_AUTO_UPGRADE && this.failTimes >= 20) {
+				if (this.mode === MODE_AUTO_UPGRADE && this.failTimes >= 30) {
 					// 游戏结束
 					this.showFailMsg = true
 					
@@ -399,13 +405,20 @@
 				// }
 				let score = this.getQuestionScore()
 				console.info('reduce score ' + score)
+				this.acquireScore = score * -1
 				score = Math.max(0, this.score - score)
 				this.score = score
 				this.setDataToCache(this.cacheKey.score, this.score)
 			},
 			addScore () {
 				let score = this.getQuestionScore()
+				
+				if (new Date().getTime() - this.currentQuestionStartTime <= 10000) {
+					this.acquireAwardScore = true
+					score = score + Math.max(3, parseInt(score * 0.2))
+				} 
 				console.info('add score mode = ' + this.mode + ', key = ' + this.cacheKey.score + ', score = ' + score)
+				this.acquireScore = score
 				this.score += score
 				this.setDataToCache(this.cacheKey.score, this.score)
 			},
@@ -575,6 +588,54 @@
 			.answer-item-selected {
 				background-color: #bbdefb;
 			}
+		}
+		
+		.acquire-score {
+			font-size: 24px;
+			position:absolute;
+			left: calc(50vw - 10px);
+			top: -30px;
+			animation:score-frames 2s;
+			-webkit-animation:score-frames 2s; /* Safari and Chrome */
+		}
+
+		@keyframes score-frames
+		{
+			0%   {top: -30px;}
+			50%  {top: -50px;}
+			100% {display: none; top: -70px;}
+		}
+
+		@-webkit-keyframes score-frames /* Safari and Chrome */
+		{
+			0%   {top: -30px;}
+			50%  {top: -50px;}
+			100% {display: none; top: -70px;}
+		}
+		
+		
+		.acquire-award-score {
+			// color: #50c255 !important;
+			font-size: 24px;
+			position:absolute;
+			left: calc(50vw - 10px);
+			top: -30px;
+			animation:acquire-award-score-frames 2s;
+			-webkit-animation:acquire-award-score-frames 2s; /* Safari and Chrome */
+		}
+		
+		@keyframes acquire-award-score-frames
+		{
+			0%   {top: -30px;font-size: 24px;}
+			50%  {top: -50px;font-size: 96px;}
+			100% {top: -60px;font-size: 122px;}
+		}
+		
+		@-webkit-keyframes acquire-award-score-frames /* Safari and Chrome */
+		{
+			0%   {top: -30px;font-size: 24px;}
+			50%  {top: -50px;font-size: 96px;}
+			100% {top: -60px;font-size: 122px;}
 		}
 	}
 </style>
