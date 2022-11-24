@@ -376,6 +376,8 @@
 				
 				if (this.successTimes > 0 && this.successTimes % 10 === 0) {
 					this.playMusic("/static/success10.mp3")
+				} else if (this.acquireAwardScore){
+					this.playMusic("/static/success-quick.mp3")
 				} else {
 					this.playMusic("/static/success.mp3")
 				}
@@ -593,8 +595,13 @@
 		.acquire-score {
 			font-size: 24px;
 			position:absolute;
-			left: calc(50vw - 10px);
+			// left: calc(50vw - 10px);
 			top: -30px;
+			left: 0px;
+			width: 100%;
+			// background-color: #b2dfdb;
+			margin: auto;
+			text-align: center;
 			animation:score-frames 2s;
 			-webkit-animation:score-frames 2s; /* Safari and Chrome */
 		}
@@ -615,27 +622,30 @@
 		
 		
 		.acquire-award-score {
-			// color: #50c255 !important;
+			color: #4caf50 !important;
 			font-size: 24px;
 			position:absolute;
-			left: calc(50vw - 10px);
+			// left: calc(50vw - 10px);
 			top: -30px;
-			animation:acquire-award-score-frames 2s;
-			-webkit-animation:acquire-award-score-frames 2s; /* Safari and Chrome */
+			width: 100%;
+			text-align: center;
+			z-index: 1000;
+			animation:acquire-award-score-frames 1s;
+			-webkit-animation:acquire-award-score-frames 1s; /* Safari and Chrome */
 		}
 		
 		@keyframes acquire-award-score-frames
 		{
 			0%   {top: -30px;font-size: 24px;}
-			50%  {top: -50px;font-size: 96px;}
-			100% {top: -60px;font-size: 122px;}
+			25%  {top: -50px;font-size: 122px;}
+			100% {top: -60px;font-size: 96px;}
 		}
 		
 		@-webkit-keyframes acquire-award-score-frames /* Safari and Chrome */
 		{
 			0%   {top: -30px;font-size: 24px;}
-			50%  {top: -50px;font-size: 96px;}
-			100% {top: -60px;font-size: 122px;}
+			25%  {top: -50px;font-size: 122px;}
+			100% {top: -60px;font-size: 96px;}
 		}
 	}
 </style>
