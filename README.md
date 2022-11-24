@@ -8,7 +8,9 @@
 准备逐步加入一下练习功能，计划涵盖语文、数学、英语等小孩需要学习的内容
 目前完成情况：
 * 用来练习加法的程序，里面添加了很多游戏元素来增加趣味性
+
 ![](screenshot/list_page.png)
+
 ![](screenshot/addition_training.png)
 
 ### 研发相关
